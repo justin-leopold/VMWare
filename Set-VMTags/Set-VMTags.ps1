@@ -1,4 +1,3 @@
-Function Get-VMNotes {
 <#  
     .SYNOPSIS  
         Sets VMs to a certain tag. 
@@ -14,34 +13,34 @@ Function Get-VMNotes {
     .LINK  
     #>
 
-Class TagNames : System.Management.Automation.IValidateSetValuesGenerator {
-    [String[]] GetValidValues() {
-        $TagNames = (Get-Tag).Name
-                        
-        return [string[]] $TagNames
+    Class TagNames : System.Management.Automation.IValidateSetValuesGenerator {
+        [String[]] GetValidValues() {
+            $TagNames = (Get-Tag).Name
+                            
+            return [string[]] $TagNames
+        }
     }
-}
-
-    [CmdletBinding()]
-    param
-    (
-        #Virtual machine name
-        [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
-        [string[]]$Vms,
+    Function Set-VMTags {
+        [CmdletBinding()]
+        param
+        (
+            #Virtual machine name
+            [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
+            [string[]]$Vms,
+        
+            #vCenter Server Name
+            [Parameter(Mandatory)]
+            [ValidateSet('pdcvcenter', 'sdcvcenter')]
+            [string]$vcenterserver,
     
-        #vCenter Server Name
-        [Parameter(Mandatory)]
-        [ValidateSet('pdcvcenter', 'sdcvcenter')]
-        [string]$vcenterserver,
-
-        #Tags, class above gathers info
-        [ValidateSet([TagNames])]
-        [String]$Tag
-    )
-
-    $Tag = Get-Tag -Name Tier1
-
-    Foreach ($Vm in $VMs) {
-        New-TagAssignment -Tag $Tag -Entity $Vm -Server $vcenterserver
-    }
-} 
+            #Tags, class above gathers info
+            [ValidateSet([TagNames])]
+            [String]$Tag
+        )
+    
+        $Tag = Get-Tag -Name Tier1
+    
+        Foreach ($Vm in $VMs) {
+            New-TagAssignment -Tag $Tag -Entity $Vm -Server $vcenterserver
+        }
+    } 
