@@ -1,4 +1,4 @@
-    <#  
+<#  
     .SYNOPSIS  
         Sets VMs to a certain tag. 
     .DESCRIPTION  
@@ -12,12 +12,35 @@
         Requires    : PowerCLI
     .LINK  
     #>
+
+Class TagNames : System.Management.Automation.IValidateSetValuesGenerator {
+    [String[]] GetValidValues() {
+        $TagNames = (Get-Tag).Name
+                        
+        return [string[]] $TagNames
+    }
+}
+Function Get-VMNotes {
+    [CmdletBinding()]
+    param
+    (
+        #Virtual machine name
+        [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
+        [string[]]$Vms,
     
-$Tier1VMs = "VM1", "VM2"
+        #vCenter Server Name
+        [Parameter(Mandatory)]
+        [ValidateSet('pdcvcenter', 'sdcvcenter')]
+        [string]$vcenterserver,
 
-$Tag = Get-Tag -Name Tier1
+        #Tags, class above gathers info
+        [ValidateSet([TagNames])]
+        [String]$Tag
+    )
 
-Foreach($Vm in $Tier1VMs){
-    New-TagAssignment -Tag $Tag -Entity $Vm
+    $Tag = Get-Tag -Name Tier1
+
+    Foreach ($Vm in $VMs) {
+        New-TagAssignment -Tag $Tag -Entity $Vm -Server $vcenterserver
     }
 } 
