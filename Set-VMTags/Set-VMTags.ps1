@@ -1,3 +1,4 @@
+Function Get-VMNotes {
 <#  
     .SYNOPSIS  
         Sets VMs to a certain tag. 
@@ -20,7 +21,7 @@ Class TagNames : System.Management.Automation.IValidateSetValuesGenerator {
         return [string[]] $TagNames
     }
 }
-Function Get-VMNotes {
+
     [CmdletBinding()]
     param
     (
