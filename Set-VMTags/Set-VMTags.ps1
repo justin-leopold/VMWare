@@ -7,9 +7,9 @@
     .NOTES  
         File Name   : Remove-UnusedStorage.ps1  
         Author      : Justin Leopold - 3/12/2018
-        Written on  : Powershell 5.1
-        Tested on   : Powershell 5.1
-        Requires    : PowerCLI
+        Written on  : Powershell 6.2
+        Tested on   : Powershell 6.2
+        Requires    : VMware.PowerCLI
     .LINK  
     #>
 
