@@ -30,7 +30,7 @@
         
             #vCenter Server Name
             [Parameter(Mandatory)]
-            [ValidateSet('pdcvcenter', 'sdcvcenter')]
+            [ValidateSet('vcenter1', 'vcenter2')]
             [string]$vcenterserver,
     
             #Tags, class above gathers info
