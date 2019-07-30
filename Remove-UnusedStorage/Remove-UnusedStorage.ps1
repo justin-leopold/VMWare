@@ -1,3 +1,4 @@
+#Requires -modules Vmware.VimAutomation.Core
 Function Remove-UnusedStorage {
     <#  
     .SYNOPSIS  
