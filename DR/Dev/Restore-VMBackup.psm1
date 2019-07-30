@@ -159,7 +159,7 @@ Function Sync-BackupRepository {
 
         #Veeam Server Name
         [Parameter(Mandatory)]
-        [ValidateSet('sw-veeam10-p')]
+        [ValidateSet('veeamserver')]
         [string]$VeaamServer,
 
         [ValidateNotNull()]
