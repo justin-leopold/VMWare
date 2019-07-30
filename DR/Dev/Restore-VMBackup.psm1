@@ -1,6 +1,9 @@
 #Requires -pssnapin VeeamPsSnapin
 #Requires -modules VMWare.VimAutomation.Core
-<#
+
+Function Restore-VMBackup {
+
+    <#
     .SYNOPSIS
     Restores a VM to the DR infrastructure from Veeam backups
     .DESCRIPTION
@@ -34,8 +37,6 @@
     Online version: https://github.com/justin-leopold/VMWare/tree/master/DR/Dev
 #>
 
-#TODO, param/function block complete tests
-Function Restore-VMBackup {
     [CmdletBinding()]
     Param
     (
@@ -138,7 +139,7 @@ Function Sync-BackupRepository {
     Syncs Veeam backup repositories at the DR site. This should be done before using other
     commands in this module if sync is not regularly scheduled. 
     .PARAMETER  RepositoryFilter
-    The name or partial name of the repository that needs to be synced.
+    The name or partial name of the repository type that needs to be synced.
     .PARAMETER  VeeamServer
     The Veeam Server where the repository is located. 
     .EXAMPLE
@@ -149,23 +150,23 @@ Function Sync-BackupRepository {
     Online version: https://github.com/justin-leopold/VMWare/tree/master/DR/Dev
 #>
 
-[CmdletBinding()]
-Param
-(
-    #vCenter Server Name
-    [Parameter(Mandatory)]
-    [string]$RepositoryFilter,
+    [CmdletBinding()]
+    Param
+    (
+        #Repo Filter on type
+        [Parameter]
+        $RepositoryFilter,
 
-    #Veeam Server Name
-    [Parameter(Mandatory)]
-    [ValidateSet('veeamserver')]
-    [string]$VeaamServer,
+        #Veeam Server Name
+        [Parameter(Mandatory)]
+        [ValidateSet('sw-veeam10-p')]
+        [string]$VeaamServer,
 
-    [ValidateNotNull()]
-    [System.Management.Automation.PSCredential]
-    [System.Management.Automation.Credential()]
-    $Credential = [System.Management.Automation.PSCredential]::Empty
-)
+        [ValidateNotNull()]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]
+        $Credential = [System.Management.Automation.PSCredential]::Empty
+    )
 
     Add-PSSnapin VeeamPsSnapin
     Connect-VBRServer -Server $VeeamServer -Credential $Credential
