@@ -1,8 +1,10 @@
+#Requires -pssnapin VeeamPsSnapin
+#Requires -modules VMWare.VimAutomation.Core
 <#
     .SYNOPSIS
-    Restores a VM to the SDC infrastructure from Veeam backups
+    Restores a VM to the DR infrastructure from Veeam backups
     .DESCRIPTION
-    Restores a VM to the SDC infrastructure from Veeam backups.
+    Restores a VM to the DR infrastructure from Veeam backups.
     Useful in the case of a DR scenario as well as moving VMs into
     the isolated "bubble" networks to test a scenario
     .PARAMETER  Vm
@@ -29,7 +31,7 @@
     File.doc
 
     .LINK
-    Online version: https://repo.dpsk12.org/justin_leopold/VmWare/blob/master/DR/Dev/Restore-VMBackup.psm1
+    Online version: https://github.com/justin-leopold/VMWare/tree/master/DR/Dev
 #>
 
 #TODO, param/function block complete tests
@@ -53,10 +55,10 @@ Function Restore-VMBackup {
         [ValidateSet('host', 'host2', 'host3')]
         [string]$VmHost,
 
-        <#Veeam Server Name
+        #Veeam Server Name
         [Parameter(Mandatory)]
         [ValidateSet('veeamserver')]
-        [string]$VeaamServer,#>
+        [string]$VeaamServer,
 
         #Destination Folder Name
         [Parameter(Mandatory)]
@@ -65,45 +67,26 @@ Function Restore-VMBackup {
         #Destination Network
         [Parameter(Mandatory = $true)]
         [ValidateSet('Networkdes', 'isolatedNetwork')]
-        [string]$BubbleNetwork
+        [string]$BubbleNetwork,
+
+        [ValidateNotNull()]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]
+        $Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [ValidateNotNull()]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]
+        $LocalCredential = [System.Management.Automation.PSCredential]::Empty
 
     )
-        
-    <#Future use, dynamic param for hosts
-        DynamicParam{
-
-        }
-            process {
-                Get-VMHost
-            }
-         #>
-    
-
-    #Uncomment this section only if deploying to a new build engine or workstation,
-    #Posh v4 or lower and Veeam Console required on run machine
-    #Setup to run on sw-veeam10-p
-    #set-alias installutil C:\Windows\Microsoft.NET\Framework\v4.0.30319\InstallUtil.exe
-    #installutil 'C:\Program Files\Veeam\Backup and Replication\Console\Veeam.Backup.PowerShell.dll'
-
-
-    #Credentials 
-    #TODO, encrytped user creds on build engine
-    #TODO update Veeam environments to match
-    $Cred = Get-credential -Message "Enter Credentials that are valid for Veeam and vCenter"
-    Connect-VBRServer -Server veeamserver -Credential $Cred
-
-    <#Scan and Sync Backups, only needs to be done one time. Takes a couple minutes
-    $BackupRepositories = Get-VBRBackupRepository | Where-Object type -ne "WinLocal"
-    Foreach ($Repo in $BackupRepositories) {
-        Sync-VBRBackupRepository -Repository $Repo
-    }#>
-
-    #Write-Output "Script is paused to allow sync to complete. This takes roughly 3 minutes"
-    #Start-Sleep -Seconds 200
-    Write-Output "Sync Complete, VM is beginning the restore process. This may take a long time"
+   
+    #Credentials and SnapIn
+    Add-PSSnapin VeeamPsSnapin
+    Connect-VBRServer -Server $VeeamServer -Credential $Credential
 
     #Find VM and Information for restore
-    $RestorePoint = Get-VbrRestorePoint -Name $VM | Sort-Object creationtime | select -last 1
+    $RestorePoint = Get-VbrRestorePoint -Name $VM | Sort-Object creationtime | Select-Object -last 1
     Write-output "RP"
     $DestDatastore = Find-VBRViEntity -DatastoresAndVMs | Where-Object name -like "*destdatastores*"
     Write-output "DS"
@@ -117,13 +100,13 @@ Function Restore-VMBackup {
     Start-VBRRestoreVM -VMName $VM -ResourcePool $Resources -Folder $Folder -DiskType Source -Datastore $DestDatastore[0] -RestorePoint $RestorePoint[0] -Server $VmHost -PowerUp:$false
 
     #Bring the guest VM back online after a restore
-    Write-Output "Restore Complete, final ip address changes are being made. You will be prompted for local credentials"
-    Connect-VIServer $vcenterserver -Credential $cred
+    Write-Verbose "Restore Complete, final ip address changes are being made."
+    Connect-VIServer $vcenterserver -Credential $Credential
     $VMcheck = Get-VM -Name $Vm
-    While($VMcheck.Name -ne $Vm) {
+    While ($VMcheck.Name -ne $Vm) {
         Start-Sleep -Seconds 30
         Write-Output "Sleeping"
-        }
+    }
 
 
     $DestPortGroup = Get-VDPortGroup -Name $BubbleNetwork
@@ -132,19 +115,64 @@ Function Restore-VMBackup {
 
     Start-Sleep -Seconds 15
 
-    $guestcred = get-credential -Message "Input local admin or root credentials"
-    #$scripttextremove = "Get-NetIPAddress -PrefixLength 24 | Get-NetIPAddress -PrefixLength 24 | Remove-NetIPAddress"
     $scripttextdhcp = "Set-NetIPInterface -InterfaceAlias Ethernet0 -DHCP enabled"
     $scripttextdns = "Set-DnsClientServerAddress -ResetServerAddresses -InterfaceAlias Ethernet0"
     $RemoveNetRoute = "Get-NetIPAddress -InterfaceAlias Ethernet0 | Remove-NetRoute -Confirm:`$false"
 
-    Invoke-VMScript -ScriptText $scripttextdhcp -ScriptType Powershell -VM $VM -GuestCredential $guestcred
+    Invoke-VMScript -ScriptText $scripttextdhcp -ScriptType Powershell -VM $VM -GuestCredential $LocalCredential
     Start-Sleep -Seconds 3
-    Invoke-VMScript -ScriptText $scripttextdns -ScriptType Powershell -VM $VM -GuestCredential $guestcred
+    Invoke-VMScript -ScriptText $scripttextdns -ScriptType Powershell -VM $VM -GuestCredential $LocalCredential
     Start-Sleep -Seconds 3
     #Below throws an error but does work
-    Invoke-VMScript -ScriptText $RemoveNetRoute -ScriptType Powershell -VM $Vm -GuestCredential $guestcred
+    Invoke-VMScript -ScriptText $RemoveNetRoute -ScriptType Powershell -VM $Vm -GuestCredential $LocalCredential
     Start-Sleep -Seconds 10
     Restart-VM -VM $VM -Confirm:$false
 
 }#close function
+
+Function Sync-BackupRepository {
+    <#
+    .SYNOPSIS
+    Syncs Veeam backup repositories at the DR site. 
+    .DESCRIPTION
+    Syncs Veeam backup repositories at the DR site. This should be done before using other
+    commands in this module if sync is not regularly scheduled. 
+    .PARAMETER  RepositoryFilter
+    The name or partial name of the repository that needs to be synced.
+    .PARAMETER  VeeamServer
+    The Veeam Server where the repository is located. 
+    .EXAMPLE
+    C:\PS> extension -name "File" -extension "doc"
+    File.doc
+
+    .LINK
+    Online version: https://github.com/justin-leopold/VMWare/tree/master/DR/Dev
+#>
+
+[CmdletBinding()]
+Param
+(
+    #vCenter Server Name
+    [Parameter(Mandatory)]
+    [string]$RepositoryFilter,
+
+    #Veeam Server Name
+    [Parameter(Mandatory)]
+    [ValidateSet('veeamserver')]
+    [string]$VeaamServer,
+
+    [ValidateNotNull()]
+    [System.Management.Automation.PSCredential]
+    [System.Management.Automation.Credential()]
+    $Credential = [System.Management.Automation.PSCredential]::Empty
+)
+
+    Add-PSSnapin VeeamPsSnapin
+    Connect-VBRServer -Server $VeeamServer -Credential $Credential
+
+    #Scan and Sync Backups, only needs to be done one time. Takes a couple minutes
+    $BackupRepositories = Get-VBRBackupRepository | Where-Object type -like "*$RepositoryFilter*" 
+    Foreach ($Repo in $BackupRepositories) {
+        Sync-VBRBackupRepository -Repository $Repo
+    }
+}#func
