@@ -22,10 +22,6 @@ Function Remove-UnusedStorage {
     #below sets the vmfs block value. Default is 200
     $blocks = "300"
 
-    #Load snap-in if it's not present
-    If ((Get-PSSnapin -Name VMware.VimAutomation.Core -ErrorAction SilentlyContinue) -eq $null ) { 
-        Add-PSSnapin VMware.VimAutomation.Core 
-    }
     
     #begin issuing commands
     Connect-VIServer -Server $HostName
