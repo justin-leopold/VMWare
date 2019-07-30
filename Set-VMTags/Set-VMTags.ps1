@@ -1,9 +1,11 @@
+#Requires -modules VMWare.VimAutomation.Core
+
 <#  
     .SYNOPSIS  
         Sets VMs to a certain tag. 
     .DESCRIPTION  
-        Cleans Sets VMs to a certain tag, is currently not a function or module but should be
-        re-worked to do so
+        Cleans Sets VMs to a certain tag. Requires powershell and modules based
+        on .NET Core.
     .NOTES  
         File Name   : Remove-UnusedStorage.ps1  
         Author      : Justin Leopold - 3/12/2018
