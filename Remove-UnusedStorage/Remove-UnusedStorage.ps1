@@ -29,13 +29,13 @@ Function Remove-UnusedStorage {
     $HostEsxCli = Get-EsxCli -VMHost $HostName
     $DataStores = Get-Datastore | Where-Object {$_.ExtensionData.Summary.Type -eq 'VMFS' -And $_.ExtensionData.Capability.PerFileThinProvisioningSupported}
     ForEach ($DStore in $DataStores) { 
-        Write-Host " ------------------------------------------------------------ " -ForegroundColor 'yellow'
-        Write-Host " -- Starting Unmap on DataStore $DStore -- " -ForegroundColor 'yellow' 
-        Write-Host " ------------------------------------------------------------ " -ForegroundColor 'yellow'
+        Write-Verbose " ------------------------------------------------------------ " -ForegroundColor 'yellow'
+        Write-Verbose " -- Starting Unmap on DataStore $DStore -- " -ForegroundColor 'yellow' 
+        Write-Verbose " ------------------------------------------------------------ " -ForegroundColor 'yellow'
         $HostEsxCli.storage.vmfs.unmap($blocks, "$DStore", $null)
-        Write-Host " ------------------------------------------------------------ " -ForegroundColor 'green'
-        Write-Host " -- Unmap has completed on DataStore $DStore -- " -ForegroundColor 'green'
-        Write-Host " ------------------------------------------------------------ " -ForegroundColor 'green'
+        Write-Verbose " ------------------------------------------------------------ " -ForegroundColor 'green'
+        Write-Verbose " -- Unmap has completed on DataStore $DStore -- " -ForegroundColor 'green'
+        Write-Verbose " ------------------------------------------------------------ " -ForegroundColor 'green'
         Start-Sleep -Seconds $Rest
     }
 }
